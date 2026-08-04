@@ -111,7 +111,7 @@
       </section>
       <section class="configuracoes" id="configuracoes" hidden>
         <h2>Editar equipe</h2>
-        <p>Altere os dados da equipe ou adicione colaboradores com a mesma escala da Flaviana, plantão inverso ou escala personalizada.</p>
+        <p>Altere os dados da equipe ou adicione colaboradores com plantão padrão, plantão inverso, escala de 12 horas em dias pares ou ímpares, ou escala personalizada.</p>
         <div id="configLinhas"></div>
         <div class="config-acoes"><button class="adicionar" id="btnAdicionarColaborador" type="button">+ Adicionar colaborador</button><button class="cancelar" id="btnCancelar" type="button">Cancelar</button><button class="salvar" id="btnSalvar" type="button">Salvar alterações</button></div>
       </section>
@@ -251,8 +251,15 @@
       const cfg = configEquipe[pessoa.value];
       const cadastroProprio = bloco?.pessoas[pessoa.value];
       const usaPadrao = cfg?.cargaHoraria === 'mesma' || cfg?.cargaHoraria === 'inversa';
+      const usaPlantao12h = cfg?.cargaHoraria === '12h_pares' || cfg?.cargaHoraria === '12h_impares';
       const cadastro = usaPadrao ? bloco?.pessoas.FLAVIANA : cadastroProprio;
-      let codigo = usaPadrao ? codigoEscalaPadrao(data) : cfg?.cargaHoraria === '8h' ? ([0,6].includes(data.getDay()) ? 'F' : '') : (cadastro?.dias[String(data.getDate())] || '');
+      let codigo = usaPadrao
+        ? codigoEscalaPadrao(data)
+        : usaPlantao12h
+          ? (data.getDate() % 2 === (cfg.cargaHoraria === '12h_pares' ? 0 : 1) ? 'P' : 'F')
+          : cfg?.cargaHoraria === '8h'
+            ? ([0,6].includes(data.getDay()) ? 'F' : '')
+            : (cadastro?.dias[String(data.getDate())] || '');
       if (cfg?.cargaHoraria === 'inversa') {
         if (codigo === 'P') codigo = 'F';
         else if (codigo === 'F') codigo = 'P';
@@ -310,7 +317,7 @@
     pessoa.addEventListener('change',renderizar);
     function linhaConfiguracao(id,c={}) {
       const carga = c.cargaHoraria || 'mesma';
-      return `<div class="config-grid" data-id="${id}"><div><label>NOME</label><input class="cfg-nome" value="${escaparHtml(c.nome||'')}" placeholder="Nome do colaborador"></div><div><label>SETOR</label><input class="cfg-setor" value="${escaparHtml(c.setor||'')}" placeholder="Ex.: Recepção"></div><div><label>TIPO DE ESCALA</label><select class="cfg-carga"><option value="mesma" ${carga==='mesma'?'selected':''}>Mesma escala da Flaviana</option><option value="inversa" ${carga==='inversa'?'selected':''}>Plantão inverso ao da Flaviana</option><option value="8h" ${carga==='8h'?'selected':''}>8 horas — fins de semana de folga</option><option value="personalizada" ${carga==='personalizada'?'selected':''}>Personalizada — sem copiar plantões</option></select></div><div><label>SEGUNDA A SEXTA</label><input class="cfg-semana" value="${escaparHtml(c.semana||'06:30 às 12:30')}" placeholder="Ex.: 06:30 às 12:30"></div><div><label>SÁBADO (QUANDO FOR PLANTÃO)</label><input class="cfg-sabado" value="${escaparHtml(c.sabado||'07:00 às 19:00')}" placeholder="Ex.: 07:00 às 19:00"></div><div><label>DOMINGO (QUANDO FOR PLANTÃO)</label><input class="cfg-domingo" value="${escaparHtml(c.domingo||'07:00 às 19:00')}" placeholder="Ex.: 07:00 às 19:00"></div><button class="remover-colaborador" type="button">Remover</button></div>`;
+      return `<div class="config-grid" data-id="${id}"><div><label>NOME</label><input class="cfg-nome" value="${escaparHtml(c.nome||'')}" placeholder="Nome do colaborador"></div><div><label>SETOR</label><input class="cfg-setor" value="${escaparHtml(c.setor||'')}" placeholder="Ex.: Escriturária UTI Adulto"></div><div><label>TIPO DE ESCALA</label><select class="cfg-carga"><option value="mesma" ${carga==='mesma'?'selected':''}>Plantão 6h — escala padrão</option><option value="inversa" ${carga==='inversa'?'selected':''}>Plantão 6h — escala inversa</option><option value="12h_pares" ${carga==='12h_pares'?'selected':''}>Plantão 12h — dias pares</option><option value="12h_impares" ${carga==='12h_impares'?'selected':''}>Plantão 12h — dias ímpares</option><option value="8h" ${carga==='8h'?'selected':''}>8 horas — fins de semana de folga</option><option value="personalizada" ${carga==='personalizada'?'selected':''}>Personalizada — sem copiar plantões</option></select></div><div><label>SEGUNDA A SEXTA</label><input class="cfg-semana" value="${escaparHtml(c.semana||'06:30 às 12:30')}" placeholder="Ex.: 07:00 às 19:00"></div><div><label>SÁBADO (QUANDO FOR PLANTÃO)</label><input class="cfg-sabado" value="${escaparHtml(c.sabado||'07:00 às 19:00')}" placeholder="Ex.: 07:00 às 19:00"></div><div><label>DOMINGO (QUANDO FOR PLANTÃO)</label><input class="cfg-domingo" value="${escaparHtml(c.domingo||'07:00 às 19:00')}" placeholder="Ex.: 07:00 às 19:00"></div><button class="remover-colaborador" type="button">Remover</button></div>`;
     }
     function abrirConfiguracoes() {
       configLinhas.innerHTML = pessoasDisponiveis().map(id=>linhaConfiguracao(id,configEquipe[id])).join('');
