@@ -79,6 +79,11 @@
       outline:3px solid #08783e;
       outline-offset:2px;
     }
+    .dia.feriado { border:3px solid #11945a; background:#e8f8ef; }
+    .dia.feriado:hover { border-color:#08783e; box-shadow:0 0 0 3px rgba(17,148,90,.18),0 8px 20px rgba(8,120,62,.18); }
+    .selo-feriado { position:absolute; top:6px; right:6px; max-width:70%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:3px 6px; border-radius:6px; color:#075d34; background:#ccefdc; font-size:.57rem; font-weight:900; letter-spacing:.02em; }
+    .ferias-nomes { position:absolute; left:6px; right:6px; bottom:37px; padding:3px 5px; border-radius:6px; color:#8a430c; background:#ffead1; font-size:.58rem; font-weight:800; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .dia.tem-ferias-equipe { min-height:92px; }
     .observacoes { margin-top:18px; padding:14px 16px; background:#fff9e8; border:1px solid #f1df9b; border-radius:11px; color:#675719; }
     .observacoes strong { display:block; margin-bottom:4px; }
     .observacoes p { margin:3px 0; }
@@ -128,7 +133,7 @@
       <div class="topo-calendario"><h2 id="tituloMes"></h2><div class="navegacao"><button id="anterior" title="Mês anterior">‹</button><button id="proximo" title="Próximo mês">›</button></div></div>
       <div class="calendario" id="calendario"></div>
       <div class="observacoes" id="observacoes" hidden></div>
-      <div class="legenda"><span><b>P</b>Plantão</span><span><b>F</b>Folga</span><span><b>☀</b>Férias</span><span><b>—</b>Dia normal</span></div>
+      <div class="legenda"><span><b>P</b>Plantão</span><span><b>F</b>Folga</span><span><b>☀</b>Férias</span><span><b>◆</b>Feriado</span></div>
     </section>
     <footer>Escala de plantão da equipe</footer>
   </main>
@@ -151,28 +156,90 @@
     const chaves = Object.keys(ESCALA).sort();
     const primeira = chaves[0], ultima = chaves.at(-1);
 
-    const CHAVE_EQUIPE = 'escalaEquipeInicialRestauradaV1';
+    const CHAVE_EQUIPE = 'escalaAdmEscriturariasV3Concierges';
+    const CHAVE_ANOTACOES = 'escalaAdmAnotacoesV3Concierges';
+    const CONCIERGES = new Set(['STEFANIE_LOUISE','MARCIA_SATO','TELMA_NICACIO']);
+    const PLANTOES_CONCIERGES = {
+      '2026-08-01':['STEFANIE_LOUISE'],
+      '2026-08-02':['TELMA_NICACIO'],
+      '2026-08-08':['TELMA_NICACIO','MARCIA_SATO'],
+      '2026-08-09':['STEFANIE_LOUISE'],
+      '2026-08-15':['STEFANIE_LOUISE','MARCIA_SATO'],
+      '2026-08-16':['TELMA_NICACIO'],
+      '2026-08-22':['TELMA_NICACIO','STEFANIE_LOUISE'],
+      '2026-08-23':['MARCIA_SATO'],
+      '2026-08-29':['TELMA_NICACIO','MARCIA_SATO'],
+      '2026-08-30':['STEFANIE_LOUISE'],
+      '2026-09-05':['STEFANIE_LOUISE','MARCIA_SATO'],
+      '2026-09-06':['TELMA_NICACIO'],
+      '2026-09-12':['TELMA_NICACIO','STEFANIE_LOUISE'],
+      '2026-09-13':['MARCIA_SATO'],
+      '2026-09-19':['TELMA_NICACIO','MARCIA_SATO'],
+      '2026-09-20':['STEFANIE_LOUISE'],
+      '2026-09-26':['STEFANIE_LOUISE','MARCIA_SATO'],
+      '2026-09-27':['TELMA_NICACIO'],
+      '2026-10-03':['TELMA_NICACIO','STEFANIE_LOUISE'],
+      '2026-10-04':['MARCIA_SATO'],
+      '2026-10-10':['TELMA_NICACIO','MARCIA_SATO'],
+      '2026-10-11':['STEFANIE_LOUISE'],
+      '2026-10-17':['STEFANIE_LOUISE','MARCIA_SATO'],
+      '2026-10-18':['TELMA_NICACIO'],
+      '2026-10-24':['TELMA_NICACIO','STEFANIE_LOUISE'],
+      '2026-10-25':['MARCIA_SATO'],
+      '2026-10-31':['TELMA_NICACIO','MARCIA_SATO'],
+      '2026-11-01':['STEFANIE_LOUISE'],
+      '2026-11-07':['STEFANIE_LOUISE','MARCIA_SATO'],
+      '2026-11-08':['TELMA_NICACIO'],
+      '2026-11-14':['TELMA_NICACIO','STEFANIE_LOUISE'],
+      '2026-11-15':['MARCIA_SATO'],
+      '2026-11-21':['TELMA_NICACIO','MARCIA_SATO'],
+      '2026-11-22':['STEFANIE_LOUISE'],
+      '2026-11-28':['STEFANIE_LOUISE','MARCIA_SATO'],
+      '2026-11-29':['TELMA_NICACIO']
+    };
     const CONFIG_PADRAO = {
-      FLAVIANA:{nome:'Flaviana',setor:'',cargaHoraria:'mesma',semana:'06:30 às 12:30',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
-      VINICIUS:{nome:'Vinicius',setor:'',cargaHoraria:'inversa',semana:'13:30 às 18:30',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
-      CAIO:{nome:'Caio',setor:'',cargaHoraria:'8h',semana:'8 horas',sabado:'Folga',domingo:'Folga',feriasInicio:'',feriasDias:0},
-      GABRIEL:{nome:'Gabriel',setor:'',cargaHoraria:'8h',semana:'8 horas',sabado:'Folga',domingo:'Folga',feriasInicio:'2026-08-11',feriasDias:12}
+      ADRIAN_NEVES:{nome:'Adrian Neves',setor:'Maqueiro',cargaHoraria:'12h_impares',semana:'06:00 às 18:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      BRUNA_MUNHOZ:{nome:'Bruna Munhoz',setor:'Escriturária UTI Adulto',cargaHoraria:'12h_pares',semana:'07:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      CAMILA_FERNANDES:{nome:'Camila Fernandes',setor:'Escriturária Maternidade',cargaHoraria:'12h_pares',semana:'07:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      CENAURO_REBEQUE:{nome:'Cenauro Rebeque',setor:'Administrativo',cargaHoraria:'8h',semana:'08:00 às 17:00',sabado:'08:00 às 12:00',domingo:'Folga',feriasInicio:'',feriasDias:0},
+      DEBORA_CRISTINA:{nome:'Debora Cristina',setor:'Escriturária UTI Neo',cargaHoraria:'12h_impares',semana:'07:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      DIEGO_SOUZA:{nome:'Diego Souza',setor:'Maqueiro',cargaHoraria:'12h_pares',semana:'06:00 às 18:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      GABRIEL_FELIPE:{nome:'Gabriel Felipe',setor:'Maqueiro',cargaHoraria:'12h_impares',semana:'06:00 às 18:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      ISADORA_VAZ:{nome:'Isadora Vaz',setor:'Escriturária',cargaHoraria:'12h_impares',semana:'07:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      JACKLINE_SANTOS:{nome:'Jackline Santos',setor:'Escriturária Maternidade',cargaHoraria:'12h_impares',semana:'07:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      MAIARA_NUNES:{nome:'Maiara Nunes',setor:'Escriturária',cargaHoraria:'12h_pares',semana:'07:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      MARCIA_SATO:{nome:'Márcia Sato',setor:'Concierge',cargaHoraria:'personalizada',semana:'13:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'2026-08-01',feriasDias:3},
+      MAYARA_VITORIA:{nome:'Mayara Vitoria',setor:'Escriturária UTI Adulto',cargaHoraria:'12h_pares',semana:'07:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      PRISCILA_FRANCA:{nome:'Priscila França',setor:'Escriturária UTI Adulto',cargaHoraria:'12h_impares',semana:'07:00 às 19:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0},
+      STEFANIE_LOUISE:{nome:'Stefanie Louise',setor:'Concierge',cargaHoraria:'personalizada',semana:'05:00 às 11:00',sabado:'06:00 às 18:00',domingo:'06:00 às 18:00',feriasInicio:'',feriasDias:0},
+      TATIANA_MAZZEI:{nome:'Tatiana Mazzei',setor:'Escriturária',cargaHoraria:'8h',semana:'07:00 às 19:00',sabado:'07:00 às 12:00',domingo:'Folga',feriasInicio:'',feriasDias:0},
+      TELMA_NICACIO:{nome:'Telma Nicácio',setor:'Concierge',cargaHoraria:'personalizada',semana:'10:00 às 16:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'2026-08-17',feriasDias:15},
+      VICTOR_HUGO:{nome:'Victor Hugo',setor:'Maqueiro',cargaHoraria:'12h_pares',semana:'06:00 às 18:00',sabado:'07:00 às 19:00',domingo:'07:00 às 19:00',feriasInicio:'',feriasDias:0}
     };
     let configEquipe;
     try {
       configEquipe = JSON.parse(localStorage.getItem(CHAVE_EQUIPE)||'null');
       if (!configEquipe) {
         configEquipe = structuredClone(CONFIG_PADRAO);
-        const antiga = JSON.parse(localStorage.getItem('escalaEquipe')||'null');
-        if (antiga) Object.keys(configEquipe).forEach(id => {
-          if (!antiga[id]) return;
-          configEquipe[id].nome = antiga[id].nome || configEquipe[id].nome;
-          configEquipe[id].semana = antiga[id].semana || configEquipe[id].semana;
-          configEquipe[id].sabado = antiga[id].fimSemana || configEquipe[id].sabado;
-          configEquipe[id].domingo = antiga[id].fimSemana || configEquipe[id].domingo;
-          configEquipe[id].feriasInicio = antiga[id].feriasInicio || configEquipe[id].feriasInicio;
-          configEquipe[id].feriasDias = Number(antiga[id].feriasDias) || configEquipe[id].feriasDias;
+        const equipeAnterior = JSON.parse(localStorage.getItem('escalaAdmEscriturariasV2')||localStorage.getItem('escalaEquipeInicialRestauradaV1')||'null');
+        if (equipeAnterior) {
+          const normalizarNome = nome => String(nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+          const anterioresPorNome = Object.values(equipeAnterior).reduce((mapa,cadastro) => {
+            mapa[normalizarNome(cadastro?.nome)] = cadastro;
+            return mapa;
+          },{});
+          Object.values(configEquipe).forEach(cadastro => {
+            const anterior = anterioresPorNome[normalizarNome(cadastro.nome)];
+            if (!anterior) return;
+            cadastro.feriasInicio = anterior.feriasInicio || '';
+            cadastro.feriasDias = Number(anterior.feriasDias) || 0;
+          });
+        }
+        // As três concierges seguem a programação oficial de agosto a novembro de 2026.
+        ['STEFANIE_LOUISE','MARCIA_SATO','TELMA_NICACIO'].forEach(id => {
+          configEquipe[id] = {...(configEquipe[id]||{}), ...CONFIG_PADRAO[id]};
         });
+        localStorage.setItem(CHAVE_EQUIPE,JSON.stringify(configEquipe));
       }
     }
     catch { configEquipe = structuredClone(CONFIG_PADRAO); }
@@ -180,8 +247,12 @@
       if (!c.cargaHoraria) c.cargaHoraria = 'mesma';
     });
     let anotacoesDatas;
-    try { anotacoesDatas = JSON.parse(localStorage.getItem('escalaAnotacoesDatas')||'{}'); }
+    try { anotacoesDatas = JSON.parse(localStorage.getItem(CHAVE_ANOTACOES)||localStorage.getItem('escalaAnotacoesDatas')||'{}'); }
     catch { anotacoesDatas = {}; }
+    if (!anotacoesDatas['2026-10-03']) {
+      anotacoesDatas['2026-10-03'] = 'Casamento Stefanie';
+      localStorage.setItem(CHAVE_ANOTACOES,JSON.stringify(anotacoesDatas));
+    }
 
     function escaparHtml(valor) {
       return String(valor).replace(/[&<>"']/g, caractere => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[caractere]);
@@ -215,6 +286,30 @@
       const cfg = configEquipe[feriasPessoa.value];
       feriasInicio.value = cfg?.feriasInicio || '';
       feriasDias.value = Number(cfg?.feriasDias) || 0;
+    }
+
+    function dataSemHora(data) { return new Date(data.getFullYear(), data.getMonth(), data.getDate()); }
+    function adicionarDias(data, dias) { return new Date(data.getFullYear(), data.getMonth(), data.getDate() + dias); }
+    function pascoa(ano) {
+      const a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+      const mes=Math.floor((h+l-7*m+114)/31), dia=((h+l-7*m+114)%31)+1;
+      return new Date(ano,mes-1,dia);
+    }
+    function nomeFeriado(data) {
+      const ano=data.getFullYear(), chave=String(data.getMonth()+1).padStart(2,'0')+'-'+String(data.getDate()).padStart(2,'0');
+      const fixos={'01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho','09-07':'Independência do Brasil','10-12':'Nossa Senhora Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-10':'Aniversário de Londrina','12-25':'Natal'};
+      if (fixos[chave]) return fixos[chave];
+      const easter=pascoa(ano), iso=isoLocal(data);
+      const moveis=[[-2,'Sexta-feira da Paixão'],[60,'Corpus Christi'],[68,'Sagrado Coração de Jesus']];
+      return moveis.find(([dias])=>isoLocal(adicionarDias(easter,dias))===iso)?.[1] || '';
+    }
+    function estaDeFerias(cfg,data) {
+      if (!cfg?.feriasInicio || Number(cfg.feriasDias)<1) return false;
+      const [a,m,d]=cfg.feriasInicio.split('-').map(Number), inicio=new Date(a,m-1,d), fim=adicionarDias(inicio,Number(cfg.feriasDias)-1), atual=dataSemHora(data);
+      return atual>=inicio && atual<=fim;
+    }
+    function pessoasDeFerias(data) {
+      return pessoasDisponiveis().filter(id=>estaDeFerias(configEquipe[id],data)).map(id=>configEquipe[id].nome||id);
     }
 
     function chaveMes(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
@@ -253,7 +348,11 @@
       const usaPadrao = cfg?.cargaHoraria === 'mesma' || cfg?.cargaHoraria === 'inversa';
       const usaPlantao12h = cfg?.cargaHoraria === '12h_pares' || cfg?.cargaHoraria === '12h_impares';
       const cadastro = usaPadrao ? bloco?.pessoas.FLAVIANA : cadastroProprio;
-      let codigo = usaPadrao
+      const chaveData = isoLocal(data);
+      const plantaoConcierge = PLANTOES_CONCIERGES[chaveData];
+      let codigo = CONCIERGES.has(pessoa.value) && plantaoConcierge
+        ? (plantaoConcierge.includes(pessoa.value) ? 'P' : 'F')
+        : usaPadrao
         ? codigoEscalaPadrao(data)
         : usaPlantao12h
           ? (data.getDate() % 2 === (cfg.cargaHoraria === '12h_pares' ? 0 : 1) ? 'P' : 'F')
@@ -298,11 +397,15 @@
       const total = new Date(mesVisivel.getFullYear(),mesVisivel.getMonth()+1,0).getDate();
       for(let d=1;d<=total;d++) {
         const dt = new Date(mesVisivel.getFullYear(),mesVisivel.getMonth(),d), info=situacao(dt), codigo=info.codigo;
+        const feriado=nomeFeriado(dt), nomesFerias=pessoasDeFerias(dt);
         const classe = codigo==='P'?'p':codigo==='F'?'f':codigo==='FÉRIAS'?'ferias':'';
         const selecionado = dataInput.value===isoLocal(dt)?'selecionado':'';
         const chaveData = isoLocal(dt), temAnotacao = Boolean(anotacoesDatas[chaveData]);
         const marca = temAnotacao ? `<span class="marca-anotacao" title="${escaparHtml(anotacoesDatas[chaveData])}">📝</span>` : '';
-        calendario.insertAdjacentHTML('beforeend',`<button class="dia ${classe} ${selecionado} ${temAnotacao ? 'com-anotacao' : ''}" data-data="${chaveData}"><span class="numero">${d}</span>${marca}<span class="codigo">${codigo||'—'}</span></button>`);
+        const seloFeriado = feriado ? `<span class="selo-feriado" title="${escaparHtml(feriado)}">FERIADO</span>` : '';
+        const avisoFerias = nomesFerias.length ? `<span class="ferias-nomes" title="Férias: ${escaparHtml(nomesFerias.join(', '))}">Férias: ${escaparHtml(nomesFerias.join(', '))}</span>` : '';
+        const codigoHtml = codigo ? `<span class="codigo">${codigo}</span>` : '';
+        calendario.insertAdjacentHTML('beforeend',`<button class="dia ${classe} ${selecionado} ${temAnotacao ? 'com-anotacao' : ''} ${feriado ? 'feriado' : ''} ${nomesFerias.length ? 'tem-ferias-equipe' : ''}" data-data="${chaveData}" title="${escaparHtml([feriado,nomesFerias.length ? 'Férias: '+nomesFerias.join(', ') : ''].filter(Boolean).join(' • '))}"><span class="numero">${d}</span>${seloFeriado}${avisoFerias}${marca}${codigoHtml}</button>`);
       }
       if (bloco?.observacoes.length) {
         observacoes.hidden=false;
@@ -379,13 +482,13 @@
       const texto = textoAnotacao.value.trim();
       if (texto) anotacoesDatas[dataInput.value] = texto;
       else delete anotacoesDatas[dataInput.value];
-      localStorage.setItem('escalaAnotacoesDatas',JSON.stringify(anotacoesDatas));
+      localStorage.setItem(CHAVE_ANOTACOES,JSON.stringify(anotacoesDatas));
       renderizar();
     });
     btnExcluirAnotacao.addEventListener('click',()=>{
       if (!dataInput.value || !anotacoesDatas[dataInput.value]) return;
       delete anotacoesDatas[dataInput.value];
-      localStorage.setItem('escalaAnotacoesDatas',JSON.stringify(anotacoesDatas));
+      localStorage.setItem(CHAVE_ANOTACOES,JSON.stringify(anotacoesDatas));
       renderizar();
     });
     document.querySelector('#btnHoje').addEventListener('click',()=>{ const alvo=dentroDaBase(hoje)?hoje:new Date(Number(primeira.slice(0,4)),Number(primeira.slice(5))-1,1); dataInput.value=isoLocal(alvo); mesVisivel=new Date(alvo.getFullYear(),alvo.getMonth(),1); renderizar(); });
