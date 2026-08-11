@@ -82,6 +82,14 @@
     .dia.feriado { border:3px solid #11945a; background:#e8f8ef; }
     .dia.feriado:hover { border-color:#08783e; box-shadow:0 0 0 3px rgba(17,148,90,.18),0 8px 20px rgba(8,120,62,.18); }
     .selo-feriado { position:absolute; top:6px; right:6px; max-width:70%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:3px 6px; border-radius:6px; color:#075d34; background:#ccefdc; font-size:.57rem; font-weight:900; letter-spacing:.02em; }
+    .dia.natal { border:3px solid #b51f2e; background:linear-gradient(145deg,#fff 0 45%,#fff1f2 45% 70%,#e8f8ef 70%); box-shadow:inset 0 0 0 2px rgba(255,255,255,.75),0 5px 15px rgba(181,31,46,.15); }
+    .dia.natal:hover { border-color:#861723; box-shadow:0 0 0 3px rgba(181,31,46,.18),0 8px 20px rgba(7,93,52,.2); }
+    .dia.natal::after { content:'❄'; position:absolute; left:8px; bottom:7px; color:#b51f2e; font-size:1rem; }
+    .dia.natal .selo-feriado { color:#fff; background:linear-gradient(90deg,#b51f2e,#08783e); }
+    .balao-aniversario { position:absolute; z-index:3; left:5px; right:5px; top:31px; padding:4px 5px; border:2px solid #e38b00; border-radius:12px; color:#783d00; background:linear-gradient(135deg,#fff2a8,#ffd9ed 52%,#dff5ff); font-size:.59rem; font-weight:900; line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; box-shadow:0 3px 8px rgba(154,97,0,.18); }
+    .balao-aniversario::before { content:'🎈'; margin-right:3px; }
+    .dia.aniversario { min-height:96px; }
+    .dia.aniversario .marca-anotacao { display:none; }
     .ferias-nomes { position:absolute; z-index:2; left:6px; right:6px; top:32px; padding:3px 5px; border-radius:6px; color:#8a430c; background:#ffead1; font-size:.58rem; font-weight:800; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .dia.tem-ferias-equipe { min-height:92px; }
     .observacoes { margin-top:18px; padding:14px 16px; background:#fff9e8; border:1px solid #f1df9b; border-radius:11px; color:#675719; }
@@ -90,7 +98,7 @@
     .legenda { display:flex; flex-wrap:wrap; gap:8px 15px; margin-top:18px; color:var(--cinza); font-size:.82rem; }
     .legenda span b { display:inline-grid; place-items:center; width:24px; height:24px; border-radius:7px; margin-right:5px; background:#edf1ef; color:var(--texto); }
     footer { text-align:center; color:var(--cinza); padding:22px 10px 0; font-size:.78rem; }
-    @media (max-width:700px) { .filtros,.config-grid,.ferias-grid,.anotacao-linha{grid-template-columns:1fr}.hoje,.configurar,.ferias-botao,.anotacao-linha button{width:100%}.painel{padding:15px}.calendario{gap:4px}.dia{min-height:62px;padding:6px}.dia.tem-ferias-equipe{min-height:88px}.dia .numero{top:5px;left:6px}.ferias-nomes{top:29px;left:4px;right:4px}.semana{font-size:.66rem}.dia .codigo{right:4px;bottom:4px;height:23px;min-width:23px}.dia .marca-anotacao{left:4px;bottom:7px}.resultado{padding:15px} }
+    @media (max-width:700px) { .filtros,.config-grid,.ferias-grid,.anotacao-linha{grid-template-columns:1fr}.hoje,.configurar,.ferias-botao,.anotacao-linha button{width:100%}.painel{padding:15px}.calendario{gap:4px}.dia{min-height:62px;padding:6px}.dia.tem-ferias-equipe,.dia.aniversario{min-height:88px}.dia .numero{top:5px;left:6px}.ferias-nomes,.balao-aniversario{top:29px;left:4px;right:4px}.semana{font-size:.66rem}.dia .codigo{right:4px;bottom:4px;height:23px;min-width:23px}.dia .marca-anotacao{left:4px;bottom:7px}.resultado{padding:15px} }
   </style>
 </head>
 <body>
@@ -158,6 +166,7 @@
 
     const CHAVE_EQUIPE = 'escalaAdmEscriturariasV3Concierges';
     const CHAVE_ANOTACOES = 'escalaAdmAnotacoesV3Concierges';
+    const CHAVE_ANIVERSARIOS = 'escalaAdmAniversariosRecorrentesV1';
     const CONCIERGES = new Set(['STEFANIE_LOUISE','MARCIA_SATO','TELMA_NICACIO']);
     const PLANTOES_CONCIERGES = {
       '2026-08-01':['STEFANIE_LOUISE'],
@@ -249,6 +258,9 @@
     let anotacoesDatas;
     try { anotacoesDatas = JSON.parse(localStorage.getItem(CHAVE_ANOTACOES)||localStorage.getItem('escalaAnotacoesDatas')||'{}'); }
     catch { anotacoesDatas = {}; }
+    let aniversariosRecorrentes;
+    try { aniversariosRecorrentes = JSON.parse(localStorage.getItem(CHAVE_ANIVERSARIOS)||'{}'); }
+    catch { aniversariosRecorrentes = {}; }
     if (!anotacoesDatas['2026-10-03']) {
       anotacoesDatas['2026-10-03'] = 'Casamento Stefanie';
       localStorage.setItem(CHAVE_ANOTACOES,JSON.stringify(anotacoesDatas));
@@ -257,8 +269,11 @@
     function escaparHtml(valor) {
       return String(valor).replace(/[&<>"']/g, caractere => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[caractere]);
     }
+    function chaveDiaMes(chaveData) { return String(chaveData||'').slice(5); }
+    function textoDaAnotacao(chaveData) { return anotacoesDatas[chaveData] || aniversariosRecorrentes[chaveDiaMes(chaveData)] || ''; }
+    function ehAniversario(texto) { return String(texto||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes('aniversario'); }
     function carregarAnotacao() {
-      const chave = dataInput.value, texto = chave ? (anotacoesDatas[chave] || '') : '';
+      const chave = dataInput.value, texto = chave ? textoDaAnotacao(chave) : '';
       textoAnotacao.value = texto;
       textoAnotacao.disabled = !chave;
       document.querySelector('#btnSalvarAnotacao').disabled = !chave;
@@ -409,12 +424,13 @@
         const feriado=nomeFeriado(dt), nomesFerias=pessoasDeFerias(dt);
         const classe = codigo==='P'?'p':codigo==='F'?'f':codigo==='FÉRIAS'?'ferias':'';
         const selecionado = dataInput.value===isoLocal(dt)?'selecionado':'';
-        const chaveData = isoLocal(dt), temAnotacao = Boolean(anotacoesDatas[chaveData]);
-        const marca = temAnotacao ? `<span class="marca-anotacao" title="${escaparHtml(anotacoesDatas[chaveData])}">📝</span>` : '';
-        const seloFeriado = feriado ? `<span class="selo-feriado" title="${escaparHtml(feriado)}">FERIADO</span>` : '';
+        const chaveData = isoLocal(dt), textoAnotado = textoDaAnotacao(chaveData), temAnotacao = Boolean(textoAnotado), aniversario = ehAniversario(textoAnotado), natal = chaveDiaMes(chaveData)==='12-25';
+        const marca = temAnotacao && !aniversario ? `<span class="marca-anotacao" title="${escaparHtml(textoAnotado)}">📝</span>` : '';
+        const balaoAniversario = aniversario ? `<span class="balao-aniversario" title="${escaparHtml(textoAnotado)}">${escaparHtml(textoAnotado)}</span>` : '';
+        const seloFeriado = feriado ? `<span class="selo-feriado" title="${escaparHtml(feriado)}">${natal ? '🎄 NATAL' : 'FERIADO'}</span>` : '';
         const avisoFerias = nomesFerias.length ? `<span class="ferias-nomes" title="Férias: ${escaparHtml(nomesFerias.join(', '))}">Férias: ${escaparHtml(nomesFerias.join(', '))}</span>` : '';
         const codigoHtml = codigo ? `<span class="codigo">${codigo}</span>` : '';
-        calendario.insertAdjacentHTML('beforeend',`<button class="dia ${classe} ${selecionado} ${temAnotacao ? 'com-anotacao' : ''} ${feriado ? 'feriado' : ''} ${nomesFerias.length ? 'tem-ferias-equipe' : ''}" data-data="${chaveData}" title="${escaparHtml([feriado,nomesFerias.length ? 'Férias: '+nomesFerias.join(', ') : ''].filter(Boolean).join(' • '))}"><span class="numero">${d}</span>${seloFeriado}${avisoFerias}${marca}${codigoHtml}</button>`);
+        calendario.insertAdjacentHTML('beforeend',`<button class="dia ${classe} ${selecionado} ${temAnotacao ? 'com-anotacao' : ''} ${feriado ? 'feriado' : ''} ${natal ? 'natal' : ''} ${aniversario ? 'aniversario' : ''} ${nomesFerias.length ? 'tem-ferias-equipe' : ''}" data-data="${chaveData}" title="${escaparHtml([feriado,textoAnotado,nomesFerias.length ? 'Férias: '+nomesFerias.join(', ') : ''].filter(Boolean).join(' • '))}"><span class="numero">${d}</span>${seloFeriado}${avisoFerias}${balaoAniversario}${marca}${codigoHtml}</button>`);
       }
       if (bloco?.observacoes.length) {
         observacoes.hidden=false;
@@ -489,15 +505,25 @@
     document.querySelector('#btnSalvarAnotacao').addEventListener('click',()=>{
       if (!dataInput.value) return;
       const texto = textoAnotacao.value.trim();
-      if (texto) anotacoesDatas[dataInput.value] = texto;
-      else delete anotacoesDatas[dataInput.value];
+      const diaMes = chaveDiaMes(dataInput.value);
+      if (texto) {
+        anotacoesDatas[dataInput.value] = texto;
+        if (ehAniversario(texto)) aniversariosRecorrentes[diaMes] = texto;
+        else delete aniversariosRecorrentes[diaMes];
+      } else {
+        delete anotacoesDatas[dataInput.value];
+        delete aniversariosRecorrentes[diaMes];
+      }
       localStorage.setItem(CHAVE_ANOTACOES,JSON.stringify(anotacoesDatas));
+      localStorage.setItem(CHAVE_ANIVERSARIOS,JSON.stringify(aniversariosRecorrentes));
       renderizar();
     });
     btnExcluirAnotacao.addEventListener('click',()=>{
-      if (!dataInput.value || !anotacoesDatas[dataInput.value]) return;
+      if (!dataInput.value || !textoDaAnotacao(dataInput.value)) return;
       delete anotacoesDatas[dataInput.value];
+      delete aniversariosRecorrentes[chaveDiaMes(dataInput.value)];
       localStorage.setItem(CHAVE_ANOTACOES,JSON.stringify(anotacoesDatas));
+      localStorage.setItem(CHAVE_ANIVERSARIOS,JSON.stringify(aniversariosRecorrentes));
       renderizar();
     });
     document.querySelector('#btnHoje').addEventListener('click',()=>{ const alvo=dentroDaBase(hoje)?hoje:new Date(Number(primeira.slice(0,4)),Number(primeira.slice(5))-1,1); dataInput.value=isoLocal(alvo); mesVisivel=new Date(alvo.getFullYear(),alvo.getMonth(),1); renderizar(); });
